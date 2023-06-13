@@ -5,6 +5,42 @@ const jwt = require("jsonwebtoken");
 
 /**
  * @desc get access token
+ * @route post / register
+ * @access PUBLIC
+ */
+
+const userRegister = asyncHandler(async (req, res) => {
+  const { name, email, password } = req.body;
+
+  if (!name || !email || !password) {
+    res.status(400).json({
+      message: "invalid register",
+    });
+  }
+
+  // email existance
+  const emailCheck = await User.findOne({ email });
+
+  if (emailCheck) {
+    return res.status(400).json({ message: "Email already exists" });
+  }
+
+  // hash password
+  const hash = await bcrypt.hash(password, 10);
+
+  // create new user data
+  const user = await User.create({ name, email, password: hash });
+
+  // check
+  if (user) {
+    return res.status(201).json({ message: "User created successful", user });
+  } else {
+    return res.status(400).json({ message: "Invalid user data" });
+  }
+});
+
+/**
+ * @desc get access token
  * @route post / login
  * @access PUBLIC
  */
@@ -22,7 +58,7 @@ const userLogin = asyncHandler(async (req, res) => {
   const userFind = await User.findOne({ email });
   if (!userFind) {
     return res.status(400).json({
-      message: "User not fount haramjada",
+      message: "User not found haramjada",
     });
   }
 
@@ -39,7 +75,6 @@ const userLogin = asyncHandler(async (req, res) => {
   const accessToken = jwt.sign(
     {
       email: userFind.email,
-      role: userFind.role,
     },
     process.env.ACCESS_TOKEN_SECRET,
     {
@@ -48,17 +83,17 @@ const userLogin = asyncHandler(async (req, res) => {
   );
 
   //refrest Token
-  const refreshToken = jwt.sign(
-    {
-      email: userFind.email,
-    },
-    process.env.REFRESH_TOKEN_SECRET,
-    {
-      expiresIn: process.env.REFRESH_TOKEN_EXPIRES_IN,
-    }
-  );
+  // const refreshToken = jwt.sign(
+  //   {
+  //     email: userFind.email,
+  //   },
+  //   process.env.REFRESH_TOKEN_SECRET,
+  //   {
+  //     expiresIn: process.env.REFRESH_TOKEN_EXPIRES_IN,
+  //   }
+  // );
 
-  res.cookie("refToken", refreshToken, {
+  res.cookie("accessToken", accessToken, {
     httpOnly: true,
     secure: false,
     maxAge: 1000 * 60 * 60 * 24 * 7,
@@ -123,6 +158,23 @@ const refrshUserToken = (req, res) => {
 };
 
 /**
+ * @desc get me
+ * @route GET / me
+ * @access PUBLIC
+ */
+
+const me = (req, res) => {
+  if (!req.me) {
+    return res.status(400).json({
+      message: "user not found",
+    });
+  }
+  res.status(200).json({
+    user: req.me,
+  });
+};
+
+/**
  * @desc Logout user
  * @route post /logout
  * @access PUBLIC
@@ -146,4 +198,4 @@ const userLogout = (req, res) => {
 };
 
 //export
-module.exports = { userLogin, refrshUserToken, userLogout };
+module.exports = { userLogin, refrshUserToken, userLogout, me, userRegister };

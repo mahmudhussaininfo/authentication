@@ -4,10 +4,11 @@ const bcrypt = require("bcrypt");
 
 const getAllUser = asyncHandler(async (req, res) => {
   const users = await User.find().select("-password").lean();
-  console.log(req.email + req.role);
   if (!users?.length) {
     return res.status(400).json({ message: "Not user found" });
   }
+
+  console.log(req.me);
 
   res.json(users);
 });
@@ -36,10 +37,10 @@ const getSingleUser = asyncHandler(async (req, res) => {
  */
 const createUser = asyncHandler(async (req, res) => {
   // get data
-  const { name, email, password, role } = req.body;
+  const { name, email, password } = req.body;
 
   // check validation
-  if (!name || !password || !email || !role) {
+  if (!name || !password || !email) {
     return res.status(400).json({ message: "All fields are required" });
   }
 
